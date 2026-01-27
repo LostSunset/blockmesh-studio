@@ -1,0 +1,28 @@
+[project]
+name = "blockmesh-studio"
+version = "0.2.0"
+description = "BlockMesh Studio - OpenFOAM blockMeshDict 網格生成工具"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "PySide6>=6.6.0",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "openpyxl>=3.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+# [tool.uv] 配置已移除，使用 UV_VENV_NAME 環境變數或手動指定
