@@ -22,12 +22,14 @@ def main():
 
     app = QApplication(sys.argv)
     app.setApplicationName("BlockMesh Studio")
-    app.setApplicationVersion("0.2.0")
+    app.setApplicationVersion("0.2.2")
     app.setOrganizationName("BlockMesh Studio")
 
     # 設定預設字型
     font = app.font()
-    font.setPointSize(10)
+    current_size = font.pointSize()
+    if current_size <= 0:
+        font.setPointSize(10)
     app.setFont(font)
 
     window = MainWindow()
