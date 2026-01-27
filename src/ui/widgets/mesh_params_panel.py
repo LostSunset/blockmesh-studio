@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Signal
 
 from ...models.mesh_params import MeshParameters
+from ..i18n import tr
 
 
 class MeshParamsPanel(QWidget):
@@ -34,70 +35,75 @@ class MeshParamsPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         # 群組框
-        group = QGroupBox("網格參數設定")
-        group_layout = QGridLayout(group)
+        self._group = QGroupBox(tr("mesh_params"))
+        group_layout = QGridLayout(self._group)
         group_layout.setSpacing(12)
 
         row = 0
 
         # 尺度因子
-        group_layout.addWidget(QLabel("尺度因子："), row, 0)
+        self._scale_label = QLabel(tr("scale_factor"))
+        group_layout.addWidget(self._scale_label, row, 0)
         self._scale_spin = QDoubleSpinBox()
         self._scale_spin.setRange(0.001, 1000)
         self._scale_spin.setDecimals(3)
         self._scale_spin.setValue(1.0)
         self._scale_spin.setSingleStep(0.1)
         group_layout.addWidget(self._scale_spin, row, 1)
-        hint = QLabel("控制整體網格的尺度比例")
-        hint.setObjectName("subtitleLabel")
-        group_layout.addWidget(hint, row, 2)
+        self._scale_hint = QLabel(tr("scale_hint"))
+        self._scale_hint.setObjectName("subtitleLabel")
+        group_layout.addWidget(self._scale_hint, row, 2)
         row += 1
 
         # 層數
-        group_layout.addWidget(QLabel("層數（Z軸截面數）："), row, 0)
+        self._layers_label = QLabel(tr("num_layers"))
+        group_layout.addWidget(self._layers_label, row, 0)
         self._layers_spin = QSpinBox()
         self._layers_spin.setRange(2, 500)
         self._layers_spin.setValue(100)
         group_layout.addWidget(self._layers_spin, row, 1)
-        hint = QLabel("值越大，Z 方向取樣越密集")
-        hint.setObjectName("subtitleLabel")
-        group_layout.addWidget(hint, row, 2)
+        self._layers_hint = QLabel(tr("layers_hint"))
+        self._layers_hint.setObjectName("subtitleLabel")
+        group_layout.addWidget(self._layers_hint, row, 2)
         row += 1
 
         # 徑向網格數
-        group_layout.addWidget(QLabel("徑向網格數："), row, 0)
+        self._radial_label = QLabel(tr("radial_cells"))
+        group_layout.addWidget(self._radial_label, row, 0)
         self._radial_spin = QSpinBox()
         self._radial_spin.setRange(1, 200)
         self._radial_spin.setValue(25)
         group_layout.addWidget(self._radial_spin, row, 1)
-        hint = QLabel("內壁到外壁的網格密度")
-        hint.setObjectName("subtitleLabel")
-        group_layout.addWidget(hint, row, 2)
+        self._radial_hint = QLabel(tr("radial_hint"))
+        self._radial_hint.setObjectName("subtitleLabel")
+        group_layout.addWidget(self._radial_hint, row, 2)
         row += 1
 
         # 圓周方向網格數
-        group_layout.addWidget(QLabel("圓周方向網格數："), row, 0)
+        self._circum_label = QLabel(tr("circum_cells"))
+        group_layout.addWidget(self._circum_label, row, 0)
         self._circum_spin = QSpinBox()
         self._circum_spin.setRange(4, 800)
         self._circum_spin.setValue(400)
         self._circum_spin.setSingleStep(4)
         group_layout.addWidget(self._circum_spin, row, 1)
-        hint = QLabel("需為 4 的倍數")
-        hint.setObjectName("subtitleLabel")
-        group_layout.addWidget(hint, row, 2)
+        self._circum_hint = QLabel(tr("circum_hint"))
+        self._circum_hint.setObjectName("subtitleLabel")
+        group_layout.addWidget(self._circum_hint, row, 2)
         row += 1
 
         # 軸向網格數
-        group_layout.addWidget(QLabel("軸向網格數："), row, 0)
+        self._axial_label = QLabel(tr("axial_cells"))
+        group_layout.addWidget(self._axial_label, row, 0)
         self._axial_spin = QSpinBox()
         self._axial_spin.setRange(1, 200)
         self._axial_spin.setValue(2)
         group_layout.addWidget(self._axial_spin, row, 1)
-        hint = QLabel("每段 Z 方向的網格密度")
-        hint.setObjectName("subtitleLabel")
-        group_layout.addWidget(hint, row, 2)
+        self._axial_hint = QLabel(tr("axial_hint"))
+        self._axial_hint.setObjectName("subtitleLabel")
+        group_layout.addWidget(self._axial_hint, row, 2)
 
-        layout.addWidget(group)
+        layout.addWidget(self._group)
 
     def _connect_signals(self) -> None:
         """連接信號"""
@@ -110,6 +116,20 @@ class MeshParamsPanel(QWidget):
     def _emit_params(self) -> None:
         """發射參數變更信號"""
         self.paramsChanged.emit(self.getParams())
+
+    def retranslateUi(self) -> None:
+        """重新翻譯 UI"""
+        self._group.setTitle(tr("mesh_params"))
+        self._scale_label.setText(tr("scale_factor"))
+        self._scale_hint.setText(tr("scale_hint"))
+        self._layers_label.setText(tr("num_layers"))
+        self._layers_hint.setText(tr("layers_hint"))
+        self._radial_label.setText(tr("radial_cells"))
+        self._radial_hint.setText(tr("radial_hint"))
+        self._circum_label.setText(tr("circum_cells"))
+        self._circum_hint.setText(tr("circum_hint"))
+        self._axial_label.setText(tr("axial_cells"))
+        self._axial_hint.setText(tr("axial_hint"))
 
     def getParams(self) -> MeshParameters:
         """取得目前參數"""

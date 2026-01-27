@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Signal
 
 from ...models.mesh_params import BoundaryLayerParams
+from ..i18n import tr
 
 
 class BoundaryLayerPanel(QWidget):
@@ -36,11 +37,11 @@ class BoundaryLayerPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         # 群組框
-        group = QGroupBox("邊界層控制")
-        group_layout = QVBoxLayout(group)
+        self._group = QGroupBox(tr("boundary_layer"))
+        group_layout = QVBoxLayout(self._group)
 
         # 啟用複選框
-        self._enabled_check = QCheckBox("啟用邊界層控制")
+        self._enabled_check = QCheckBox(tr("enable_bl"))
         group_layout.addWidget(self._enabled_check)
 
         # 參數容器
@@ -52,33 +53,36 @@ class BoundaryLayerPanel(QWidget):
         row = 0
 
         # 內壁邊界層厚度
-        params_layout.addWidget(QLabel("內壁邊界層厚度："), row, 0)
+        self._inner_thickness_label = QLabel(tr("inner_thickness"))
+        params_layout.addWidget(self._inner_thickness_label, row, 0)
         self._inner_thickness_spin = QDoubleSpinBox()
         self._inner_thickness_spin.setRange(0.01, 0.5)
         self._inner_thickness_spin.setDecimals(3)
         self._inner_thickness_spin.setValue(0.02)
         self._inner_thickness_spin.setSingleStep(0.01)
         params_layout.addWidget(self._inner_thickness_spin, row, 1)
-        hint = QLabel("相對於徑向距離的比例")
-        hint.setObjectName("subtitleLabel")
-        params_layout.addWidget(hint, row, 2)
+        self._inner_thickness_hint = QLabel(tr("thickness_hint"))
+        self._inner_thickness_hint.setObjectName("subtitleLabel")
+        params_layout.addWidget(self._inner_thickness_hint, row, 2)
         row += 1
 
         # 外壁邊界層厚度
-        params_layout.addWidget(QLabel("外壁邊界層厚度："), row, 0)
+        self._outer_thickness_label = QLabel(tr("outer_thickness"))
+        params_layout.addWidget(self._outer_thickness_label, row, 0)
         self._outer_thickness_spin = QDoubleSpinBox()
         self._outer_thickness_spin.setRange(0.01, 0.5)
         self._outer_thickness_spin.setDecimals(3)
         self._outer_thickness_spin.setValue(0.02)
         self._outer_thickness_spin.setSingleStep(0.01)
         params_layout.addWidget(self._outer_thickness_spin, row, 1)
-        hint = QLabel("相對於徑向距離的比例")
-        hint.setObjectName("subtitleLabel")
-        params_layout.addWidget(hint, row, 2)
+        self._outer_thickness_hint = QLabel(tr("thickness_hint"))
+        self._outer_thickness_hint.setObjectName("subtitleLabel")
+        params_layout.addWidget(self._outer_thickness_hint, row, 2)
         row += 1
 
         # 內壁邊界層層數
-        params_layout.addWidget(QLabel("內壁邊界層層數："), row, 0)
+        self._inner_layers_label = QLabel(tr("inner_layers"))
+        params_layout.addWidget(self._inner_layers_label, row, 0)
         self._inner_layers_spin = QSpinBox()
         self._inner_layers_spin.setRange(1, 20)
         self._inner_layers_spin.setValue(5)
@@ -86,7 +90,8 @@ class BoundaryLayerPanel(QWidget):
         row += 1
 
         # 外壁邊界層層數
-        params_layout.addWidget(QLabel("外壁邊界層層數："), row, 0)
+        self._outer_layers_label = QLabel(tr("outer_layers"))
+        params_layout.addWidget(self._outer_layers_label, row, 0)
         self._outer_layers_spin = QSpinBox()
         self._outer_layers_spin.setRange(1, 20)
         self._outer_layers_spin.setValue(5)
@@ -94,19 +99,20 @@ class BoundaryLayerPanel(QWidget):
         row += 1
 
         # 邊界層擴展比
-        params_layout.addWidget(QLabel("邊界層擴展比："), row, 0)
+        self._expansion_label = QLabel(tr("expansion_ratio"))
+        params_layout.addWidget(self._expansion_label, row, 0)
         self._expansion_spin = QDoubleSpinBox()
         self._expansion_spin.setRange(1.01, 2.0)
         self._expansion_spin.setDecimals(2)
         self._expansion_spin.setValue(1.2)
         self._expansion_spin.setSingleStep(0.05)
         params_layout.addWidget(self._expansion_spin, row, 1)
-        hint = QLabel("每層相對於上一層的厚度比例")
-        hint.setObjectName("subtitleLabel")
-        params_layout.addWidget(hint, row, 2)
+        self._expansion_hint = QLabel(tr("expansion_hint"))
+        self._expansion_hint.setObjectName("subtitleLabel")
+        params_layout.addWidget(self._expansion_hint, row, 2)
 
         group_layout.addWidget(self._params_widget)
-        layout.addWidget(group)
+        layout.addWidget(self._group)
 
     def _connect_signals(self) -> None:
         """連接信號"""
@@ -126,6 +132,19 @@ class BoundaryLayerPanel(QWidget):
     def _emit_params(self) -> None:
         """發射參數變更信號"""
         self.paramsChanged.emit(self.getParams())
+
+    def retranslateUi(self) -> None:
+        """重新翻譯 UI"""
+        self._group.setTitle(tr("boundary_layer"))
+        self._enabled_check.setText(tr("enable_bl"))
+        self._inner_thickness_label.setText(tr("inner_thickness"))
+        self._outer_thickness_label.setText(tr("outer_thickness"))
+        self._inner_thickness_hint.setText(tr("thickness_hint"))
+        self._outer_thickness_hint.setText(tr("thickness_hint"))
+        self._inner_layers_label.setText(tr("inner_layers"))
+        self._outer_layers_label.setText(tr("outer_layers"))
+        self._expansion_label.setText(tr("expansion_ratio"))
+        self._expansion_hint.setText(tr("expansion_hint"))
 
     def getParams(self) -> BoundaryLayerParams:
         """取得目前參數"""

@@ -3,8 +3,16 @@
 檔案選擇器元件
 """
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton, QFileDialog
+from PySide6.QtWidgets import (
+    QWidget,
+    QHBoxLayout,
+    QLineEdit,
+    QPushButton,
+    QFileDialog,
+)
 from PySide6.QtCore import Signal
+
+from ..i18n import tr
 
 
 class FileSelector(QWidget):
@@ -17,7 +25,7 @@ class FileSelector(QWidget):
         self,
         parent=None,
         mode: str = "open",  # "open" 或 "save"
-        file_filter: str = "所有檔案 (*.*)",
+        file_filter: str = "All Files (*.*)",
         default_name: str = "",
         placeholder: str = "",
     ):
@@ -36,10 +44,11 @@ class FileSelector(QWidget):
         self._mode = mode
         self._file_filter = file_filter
         self._default_name = default_name
+        self._placeholder = placeholder
 
-        self._setup_ui(placeholder)
+        self._setup_ui()
 
-    def _setup_ui(self, placeholder: str) -> None:
+    def _setup_ui(self) -> None:
         """設定 UI"""
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -47,12 +56,12 @@ class FileSelector(QWidget):
 
         # 路徑輸入框
         self._path_edit = QLineEdit()
-        self._path_edit.setPlaceholderText(placeholder)
+        self._path_edit.setPlaceholderText(self._placeholder)
         self._path_edit.textChanged.connect(self._on_text_changed)
         layout.addWidget(self._path_edit, 1)
 
         # 瀏覽按鈕
-        self._browse_btn = QPushButton("瀏覽...")
+        self._browse_btn = QPushButton(tr("browse"))
         self._browse_btn.setObjectName("browseButton")
         self._browse_btn.clicked.connect(self._on_browse)
         layout.addWidget(self._browse_btn)
@@ -61,11 +70,11 @@ class FileSelector(QWidget):
         """處理瀏覽按鈕點擊"""
         if self._mode == "open":
             path, _ = QFileDialog.getOpenFileName(
-                self, "選擇檔案", "", self._file_filter
+                self, "Select File", "", self._file_filter
             )
         else:
             path, _ = QFileDialog.getSaveFileName(
-                self, "儲存檔案", self._default_name, self._file_filter
+                self, "Save File", self._default_name, self._file_filter
             )
 
         if path:
@@ -74,6 +83,10 @@ class FileSelector(QWidget):
     def _on_text_changed(self, text: str) -> None:
         """處理文字變更"""
         self.fileChanged.emit(text)
+
+    def retranslateUi(self) -> None:
+        """重新翻譯 UI"""
+        self._browse_btn.setText(tr("browse"))
 
     def path(self) -> str:
         """取得目前路徑"""
@@ -85,6 +98,7 @@ class FileSelector(QWidget):
 
     def setPlaceholder(self, text: str) -> None:
         """設定佔位符"""
+        self._placeholder = text
         self._path_edit.setPlaceholderText(text)
 
     def clear(self) -> None:

@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Signal
 
 from ...models.mesh_params import CylinderMeshParams
+from ..i18n import tr
 
 
 class CylinderParamsPanel(QWidget):
@@ -34,14 +35,15 @@ class CylinderParamsPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         # 幾何參數群組
-        geom_group = QGroupBox("幾何參數")
-        geom_layout = QGridLayout(geom_group)
+        self._geom_group = QGroupBox(tr("geometry_params"))
+        geom_layout = QGridLayout(self._geom_group)
         geom_layout.setSpacing(12)
 
         row = 0
 
         # 內方形邊長
-        geom_layout.addWidget(QLabel("內方形邊長："), row, 0)
+        self._square_label = QLabel(tr("square_side"))
+        geom_layout.addWidget(self._square_label, row, 0)
         self._square_spin = QDoubleSpinBox()
         self._square_spin.setRange(0.01, 10)
         self._square_spin.setDecimals(3)
@@ -51,20 +53,22 @@ class CylinderParamsPanel(QWidget):
         row += 1
 
         # 內方形曲率
-        geom_layout.addWidget(QLabel("內方形曲率："), row, 0)
+        self._curve_label = QLabel(tr("square_curve"))
+        geom_layout.addWidget(self._curve_label, row, 0)
         self._curve_spin = QDoubleSpinBox()
         self._curve_spin.setRange(0.01, 10)
         self._curve_spin.setDecimals(3)
         self._curve_spin.setValue(0.4)
         self._curve_spin.setSingleStep(0.1)
         geom_layout.addWidget(self._curve_spin, row, 1)
-        hint = QLabel("必須大於內方形邊長")
-        hint.setObjectName("subtitleLabel")
-        geom_layout.addWidget(hint, row, 2)
+        self._curve_hint = QLabel(tr("curve_hint"))
+        self._curve_hint.setObjectName("subtitleLabel")
+        geom_layout.addWidget(self._curve_hint, row, 2)
         row += 1
 
         # 圓柱半徑
-        geom_layout.addWidget(QLabel("圓柱半徑："), row, 0)
+        self._radius_label = QLabel(tr("radius"))
+        geom_layout.addWidget(self._radius_label, row, 0)
         self._radius_spin = QDoubleSpinBox()
         self._radius_spin.setRange(0.1, 100)
         self._radius_spin.setDecimals(3)
@@ -74,7 +78,8 @@ class CylinderParamsPanel(QWidget):
         row += 1
 
         # 圓柱高度
-        geom_layout.addWidget(QLabel("圓柱高度："), row, 0)
+        self._height_label = QLabel(tr("height"))
+        geom_layout.addWidget(self._height_label, row, 0)
         self._height_spin = QDoubleSpinBox()
         self._height_spin.setRange(0.1, 1000)
         self._height_spin.setDecimals(3)
@@ -84,7 +89,8 @@ class CylinderParamsPanel(QWidget):
         row += 1
 
         # 底面 X 座標
-        geom_layout.addWidget(QLabel("底面 X 座標："), row, 0)
+        self._base_x_label = QLabel(tr("base_x"))
+        geom_layout.addWidget(self._base_x_label, row, 0)
         self._base_x_spin = QDoubleSpinBox()
         self._base_x_spin.setRange(-1000, 1000)
         self._base_x_spin.setDecimals(3)
@@ -92,17 +98,18 @@ class CylinderParamsPanel(QWidget):
         self._base_x_spin.setSingleStep(0.5)
         geom_layout.addWidget(self._base_x_spin, row, 1)
 
-        layout.addWidget(geom_group)
+        layout.addWidget(self._geom_group)
 
         # 網格參數群組
-        mesh_group = QGroupBox("網格參數")
-        mesh_layout = QGridLayout(mesh_group)
+        self._mesh_group = QGroupBox(tr("mesh_params_cyl"))
+        mesh_layout = QGridLayout(self._mesh_group)
         mesh_layout.setSpacing(12)
 
         row = 0
 
         # 內方形網格數
-        mesh_layout.addWidget(QLabel("內方形網格數："), row, 0)
+        self._ns_label = QLabel(tr("square_cells"))
+        mesh_layout.addWidget(self._ns_label, row, 0)
         self._ns_spin = QSpinBox()
         self._ns_spin.setRange(1, 200)
         self._ns_spin.setValue(30)
@@ -110,7 +117,8 @@ class CylinderParamsPanel(QWidget):
         row += 1
 
         # 內方形到圓形網格數
-        mesh_layout.addWidget(QLabel("內圓環網格數："), row, 0)
+        self._ni_label = QLabel(tr("inner_cells"))
+        mesh_layout.addWidget(self._ni_label, row, 0)
         self._ni_spin = QSpinBox()
         self._ni_spin.setRange(1, 200)
         self._ni_spin.setValue(30)
@@ -118,13 +126,14 @@ class CylinderParamsPanel(QWidget):
         row += 1
 
         # 高度方向網格數
-        mesh_layout.addWidget(QLabel("高度方向網格數："), row, 0)
+        self._nh_label = QLabel(tr("height_cells"))
+        mesh_layout.addWidget(self._nh_label, row, 0)
         self._nh_spin = QSpinBox()
         self._nh_spin.setRange(1, 1000)
         self._nh_spin.setValue(120)
         mesh_layout.addWidget(self._nh_spin, row, 1)
 
-        layout.addWidget(mesh_group)
+        layout.addWidget(self._mesh_group)
         layout.addStretch()
 
     def _connect_signals(self) -> None:
@@ -144,6 +153,20 @@ class CylinderParamsPanel(QWidget):
     def _emit_params(self) -> None:
         """發射參數變更信號"""
         self.paramsChanged.emit(self.getParams())
+
+    def retranslateUi(self) -> None:
+        """重新翻譯 UI"""
+        self._geom_group.setTitle(tr("geometry_params"))
+        self._square_label.setText(tr("square_side"))
+        self._curve_label.setText(tr("square_curve"))
+        self._curve_hint.setText(tr("curve_hint"))
+        self._radius_label.setText(tr("radius"))
+        self._height_label.setText(tr("height"))
+        self._base_x_label.setText(tr("base_x"))
+        self._mesh_group.setTitle(tr("mesh_params_cyl"))
+        self._ns_label.setText(tr("square_cells"))
+        self._ni_label.setText(tr("inner_cells"))
+        self._nh_label.setText(tr("height_cells"))
 
     def getParams(self) -> CylinderMeshParams:
         """取得目前參數"""

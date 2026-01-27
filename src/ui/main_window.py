@@ -3,7 +3,7 @@
 主視窗模組
 
 BlockMesh Studio 主應用程式視窗
-採用無印良品風格設計
+採用無印良品風格設計，支援中英文切換
 """
 
 from pathlib import Path
@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QStatusBar,
     QFrame,
+    QComboBox,
 )
 from PySide6.QtCore import Qt
 
@@ -29,6 +30,7 @@ from .widgets.mesh_params_panel import MeshParamsPanel
 from .widgets.boundary_layer_panel import BoundaryLayerPanel
 from .widgets.cylinder_params_panel import CylinderParamsPanel
 from .resources import get_stylesheet
+from .i18n import tr, set_language, get_language
 
 from ..core.excel_reader import ExcelReader
 from ..core.mesh_generator import MeshGenerator
@@ -52,9 +54,9 @@ class MainWindow(QMainWindow):
 
     def _setup_window(self) -> None:
         """設定視窗屬性"""
-        self.setWindowTitle("BlockMesh Studio")
-        self.setMinimumSize(720, 800)
-        self.resize(800, 900)
+        self.setWindowTitle(tr("app_title"))
+        self.setMinimumSize(780, 850)
+        self.resize(850, 950)
 
     def _setup_ui(self) -> None:
         """設定 UI"""
@@ -66,16 +68,37 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(24, 24, 24, 24)
         main_layout.setSpacing(16)
 
-        # 標題
-        title = QLabel("BlockMesh Studio")
-        title.setObjectName("titleLabel")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        main_layout.addWidget(title)
+        # 標題列（含語言切換）
+        header_layout = QHBoxLayout()
 
-        subtitle = QLabel("OpenFOAM blockMeshDict 網格生成工具")
-        subtitle.setObjectName("subtitleLabel")
-        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        main_layout.addWidget(subtitle)
+        title_layout = QVBoxLayout()
+        self._title = QLabel(tr("app_title"))
+        self._title.setObjectName("titleLabel")
+        self._title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title_layout.addWidget(self._title)
+
+        self._subtitle = QLabel(tr("app_subtitle"))
+        self._subtitle.setObjectName("subtitleLabel")
+        self._subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title_layout.addWidget(self._subtitle)
+
+        header_layout.addLayout(title_layout, 1)
+
+        # 語言切換
+        lang_layout = QVBoxLayout()
+        self._lang_label = QLabel(tr("language") + ":")
+        self._lang_label.setObjectName("subtitleLabel")
+        lang_layout.addWidget(self._lang_label)
+
+        self._lang_combo = QComboBox()
+        self._lang_combo.addItem("正體中文", "zh_TW")
+        self._lang_combo.addItem("English", "en")
+        self._lang_combo.setCurrentIndex(0 if get_language() == "zh_TW" else 1)
+        self._lang_combo.currentIndexChanged.connect(self._on_language_changed)
+        lang_layout.addWidget(self._lang_combo)
+
+        header_layout.addLayout(lang_layout)
+        main_layout.addLayout(header_layout)
 
         # 分隔線
         line = QFrame()
@@ -96,12 +119,12 @@ class MainWindow(QMainWindow):
         # 狀態列
         self._status_bar = QStatusBar()
         self.setStatusBar(self._status_bar)
-        self._status_bar.showMessage("就緒")
+        self._status_bar.showMessage(tr("ready"))
 
     def _setup_excel_tab(self) -> None:
         """設定 Excel 轉換分頁"""
-        tab = QWidget()
-        layout = QVBoxLayout(tab)
+        self._excel_tab = QWidget()
+        layout = QVBoxLayout(self._excel_tab)
         layout.setSpacing(16)
 
         # 捲動區域
@@ -114,33 +137,33 @@ class MainWindow(QMainWindow):
         scroll_layout.setSpacing(16)
 
         # 檔案選擇區
-        file_group = QGroupBox("檔案設定")
-        file_layout = QVBoxLayout(file_group)
+        self._file_group = QGroupBox(tr("file_settings"))
+        file_layout = QVBoxLayout(self._file_group)
         file_layout.setSpacing(12)
 
         # Excel 檔案
-        excel_label = QLabel("Excel 檔案：")
-        file_layout.addWidget(excel_label)
+        self._excel_label = QLabel(tr("excel_file"))
+        file_layout.addWidget(self._excel_label)
         self._excel_selector = FileSelector(
             mode="open",
-            file_filter="Excel 檔案 (*.xlsx *.xls);;所有檔案 (*.*)",
-            placeholder="選擇包含流道數據的 Excel 檔案...",
+            file_filter="Excel Files (*.xlsx *.xls);;All Files (*.*)",
+            placeholder=tr("select_excel"),
         )
         self._excel_selector.fileChanged.connect(self._on_excel_changed)
         file_layout.addWidget(self._excel_selector)
 
         # 輸出檔案
-        output_label = QLabel("輸出檔案：")
-        file_layout.addWidget(output_label)
+        self._output_label = QLabel(tr("output_file"))
+        file_layout.addWidget(self._output_label)
         self._output_selector = FileSelector(
             mode="save",
-            file_filter="所有檔案 (*);;Dict 檔案 (*.dict)",
+            file_filter="All Files (*);;Dict Files (*.dict)",
             default_name="blockMeshDict",
-            placeholder="輸出 blockMeshDict 路徑...",
+            placeholder=tr("output_path"),
         )
         file_layout.addWidget(self._output_selector)
 
-        scroll_layout.addWidget(file_group)
+        scroll_layout.addWidget(self._file_group)
 
         # 網格參數
         self._mesh_panel = MeshParamsPanel()
@@ -153,19 +176,12 @@ class MainWindow(QMainWindow):
         scroll_layout.addWidget(self._bl_panel)
 
         # 說明
-        info_group = QGroupBox("說明")
-        info_layout = QVBoxLayout(info_group)
-        info_text = QLabel(
-            "此工具將 Excel 中的 2D 流道點位數據轉換為 3D 圓柱網格。\n\n"
-            "1. 選擇包含流道點位的 Excel 檔案\n"
-            "2. 設定網格參數\n"
-            "3. 可選：設定邊界層參數以優化近壁面網格\n"
-            "4. 點擊「生成」按鈕創建 blockMeshDict 檔案\n\n"
-            "注意：Excel 檔案需包含 X, Y, Z 三列座標"
-        )
-        info_text.setWordWrap(True)
-        info_layout.addWidget(info_text)
-        scroll_layout.addWidget(info_group)
+        self._excel_info_group = QGroupBox(tr("info"))
+        info_layout = QVBoxLayout(self._excel_info_group)
+        self._excel_info_text = QLabel(tr("excel_info"))
+        self._excel_info_text.setWordWrap(True)
+        info_layout.addWidget(self._excel_info_text)
+        scroll_layout.addWidget(self._excel_info_group)
 
         scroll_layout.addStretch()
         scroll.setWidget(scroll_content)
@@ -175,23 +191,23 @@ class MainWindow(QMainWindow):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
 
-        close_btn = QPushButton("關閉")
-        close_btn.clicked.connect(self.close)
-        btn_layout.addWidget(close_btn)
+        self._excel_close_btn = QPushButton(tr("close"))
+        self._excel_close_btn.clicked.connect(self.close)
+        btn_layout.addWidget(self._excel_close_btn)
 
-        generate_btn = QPushButton("生成")
-        generate_btn.setObjectName("primaryButton")
-        generate_btn.clicked.connect(self._on_generate_excel)
-        btn_layout.addWidget(generate_btn)
+        self._excel_generate_btn = QPushButton(tr("generate"))
+        self._excel_generate_btn.setObjectName("primaryButton")
+        self._excel_generate_btn.clicked.connect(self._on_generate_excel)
+        btn_layout.addWidget(self._excel_generate_btn)
 
         layout.addLayout(btn_layout)
 
-        self._tabs.addTab(tab, "Excel 轉換")
+        self._tabs.addTab(self._excel_tab, tr("tab_excel"))
 
     def _setup_cylinder_tab(self) -> None:
         """設定圓柱網格分頁"""
-        tab = QWidget()
-        layout = QVBoxLayout(tab)
+        self._cylinder_tab = QWidget()
+        layout = QVBoxLayout(self._cylinder_tab)
         layout.setSpacing(16)
 
         # 捲動區域
@@ -204,19 +220,19 @@ class MainWindow(QMainWindow):
         scroll_layout.setSpacing(16)
 
         # 輸出檔案
-        file_group = QGroupBox("輸出設定")
-        file_layout = QVBoxLayout(file_group)
+        self._cyl_file_group = QGroupBox(tr("output_settings"))
+        file_layout = QVBoxLayout(self._cyl_file_group)
 
-        output_label = QLabel("輸出檔案：")
-        file_layout.addWidget(output_label)
+        self._cyl_output_label = QLabel(tr("output_file"))
+        file_layout.addWidget(self._cyl_output_label)
         self._cylinder_output = FileSelector(
             mode="save",
-            file_filter="所有檔案 (*);;Dict 檔案 (*.dict)",
+            file_filter="All Files (*);;Dict Files (*.dict)",
             default_name="blockMeshDict",
-            placeholder="輸出 blockMeshDict 路徑...",
+            placeholder=tr("output_path"),
         )
         file_layout.addWidget(self._cylinder_output)
-        scroll_layout.addWidget(file_group)
+        scroll_layout.addWidget(self._cyl_file_group)
 
         # 圓柱參數
         self._cylinder_panel = CylinderParamsPanel()
@@ -224,22 +240,12 @@ class MainWindow(QMainWindow):
         scroll_layout.addWidget(self._cylinder_panel)
 
         # 說明
-        info_group = QGroupBox("說明")
-        info_layout = QVBoxLayout(info_group)
-        info_text = QLabel(
-            "此工具生成以 X 軸為高度方向的圓柱形網格。\n\n"
-            "網格結構：\n"
-            "• 中心為正方形核心區域\n"
-            "• 四周為扇形過渡區域\n"
-            "• 外圈為圓形邊界\n\n"
-            "邊界設定：\n"
-            "• inlet：底面（X = 底面座標）\n"
-            "• outlet：頂面（X = 底面座標 + 高度）\n"
-            "• Enclosure：圓柱外壁"
-        )
-        info_text.setWordWrap(True)
-        info_layout.addWidget(info_text)
-        scroll_layout.addWidget(info_group)
+        self._cyl_info_group = QGroupBox(tr("info"))
+        info_layout = QVBoxLayout(self._cyl_info_group)
+        self._cyl_info_text = QLabel(tr("cylinder_info"))
+        self._cyl_info_text.setWordWrap(True)
+        info_layout.addWidget(self._cyl_info_text)
+        scroll_layout.addWidget(self._cyl_info_group)
 
         scroll_layout.addStretch()
         scroll.setWidget(scroll_content)
@@ -249,24 +255,73 @@ class MainWindow(QMainWindow):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
 
-        close_btn = QPushButton("關閉")
-        close_btn.clicked.connect(self.close)
-        btn_layout.addWidget(close_btn)
+        self._cyl_close_btn = QPushButton(tr("close"))
+        self._cyl_close_btn.clicked.connect(self.close)
+        btn_layout.addWidget(self._cyl_close_btn)
 
-        generate_btn = QPushButton("生成")
-        generate_btn.setObjectName("primaryButton")
-        generate_btn.clicked.connect(self._on_generate_cylinder)
-        btn_layout.addWidget(generate_btn)
+        self._cyl_generate_btn = QPushButton(tr("generate"))
+        self._cyl_generate_btn.setObjectName("primaryButton")
+        self._cyl_generate_btn.clicked.connect(self._on_generate_cylinder)
+        btn_layout.addWidget(self._cyl_generate_btn)
 
         layout.addLayout(btn_layout)
 
-        self._tabs.addTab(tab, "圓柱網格")
+        self._tabs.addTab(self._cylinder_tab, tr("tab_cylinder"))
 
     def _apply_style(self) -> None:
         """套用樣式表"""
         stylesheet = get_stylesheet()
         if stylesheet:
             self.setStyleSheet(stylesheet)
+
+    def _on_language_changed(self, index: int) -> None:
+        """處理語言變更"""
+        lang = self._lang_combo.itemData(index)
+        set_language(lang)
+        self._retranslate_ui()
+
+    def _retranslate_ui(self) -> None:
+        """重新翻譯所有 UI 元素"""
+        # 視窗標題
+        self.setWindowTitle(tr("app_title"))
+        self._title.setText(tr("app_title"))
+        self._subtitle.setText(tr("app_subtitle"))
+        self._lang_label.setText(tr("language") + ":")
+
+        # 分頁標題
+        self._tabs.setTabText(0, tr("tab_excel"))
+        self._tabs.setTabText(1, tr("tab_cylinder"))
+
+        # Excel 分頁
+        self._file_group.setTitle(tr("file_settings"))
+        self._excel_label.setText(tr("excel_file"))
+        self._output_label.setText(tr("output_file"))
+        self._excel_selector.setPlaceholder(tr("select_excel"))
+        self._output_selector.setPlaceholder(tr("output_path"))
+        self._excel_info_group.setTitle(tr("info"))
+        self._excel_info_text.setText(tr("excel_info"))
+        self._excel_close_btn.setText(tr("close"))
+        self._excel_generate_btn.setText(tr("generate"))
+
+        # 圓柱分頁
+        self._cyl_file_group.setTitle(tr("output_settings"))
+        self._cyl_output_label.setText(tr("output_file"))
+        self._cylinder_output.setPlaceholder(tr("output_path"))
+        self._cyl_info_group.setTitle(tr("info"))
+        self._cyl_info_text.setText(tr("cylinder_info"))
+        self._cyl_close_btn.setText(tr("close"))
+        self._cyl_generate_btn.setText(tr("generate"))
+
+        # 子面板
+        self._excel_selector.retranslateUi()
+        self._output_selector.retranslateUi()
+        self._cylinder_output.retranslateUi()
+        self._mesh_panel.retranslateUi()
+        self._bl_panel.retranslateUi()
+        self._cylinder_panel.retranslateUi()
+
+        # 狀態列
+        self._status_bar.showMessage(tr("ready"))
 
     def _on_excel_changed(self, path: str) -> None:
         """處理 Excel 路徑變更"""
@@ -295,26 +350,26 @@ class MainWindow(QMainWindow):
         output_path = self._output_selector.path()
 
         if not excel_path:
-            QMessageBox.warning(self, "警告", "請選擇 Excel 檔案")
+            QMessageBox.warning(self, tr("warning"), tr("select_excel_file"))
             return
 
         if not output_path:
-            QMessageBox.warning(self, "警告", "請設定輸出檔案路徑")
+            QMessageBox.warning(self, tr("warning"), tr("set_output_path"))
             return
 
         # 驗證參數
         valid, msg = self._mesh_params.validate()
         if not valid:
-            QMessageBox.warning(self, "參數錯誤", msg)
+            QMessageBox.warning(self, tr("param_error"), msg)
             return
 
         valid, msg = self._bl_params.validate()
         if not valid:
-            QMessageBox.warning(self, "參數錯誤", msg)
+            QMessageBox.warning(self, tr("param_error"), msg)
             return
 
         try:
-            self._status_bar.showMessage("正在讀取 Excel 檔案...")
+            self._status_bar.showMessage(tr("reading_excel"))
 
             # 讀取 Excel
             reader = ExcelReader(excel_path)
@@ -323,49 +378,49 @@ class MainWindow(QMainWindow):
                 self._mesh_params.num_layers
             )
 
-            self._status_bar.showMessage("正在生成 blockMeshDict...")
+            self._status_bar.showMessage(tr("generating"))
 
             # 生成網格
             generator = MeshGenerator(self._mesh_params, self._bl_params)
             generator.generate(inner_samples, outer_samples, output_path)
 
-            self._status_bar.showMessage(f"已生成：{output_path}")
+            self._status_bar.showMessage(tr("generated") + output_path)
             QMessageBox.information(
-                self, "成功", f"已成功生成 blockMeshDict 檔案：\n{output_path}"
+                self, tr("success"), tr("success_msg") + f"\n{output_path}"
             )
 
         except FileNotFoundError as e:
-            QMessageBox.critical(self, "錯誤", f"檔案不存在：{e}")
-            self._status_bar.showMessage("生成失敗")
+            QMessageBox.critical(self, tr("error"), tr("file_not_found") + str(e))
+            self._status_bar.showMessage(tr("failed"))
         except Exception as e:
-            QMessageBox.critical(self, "錯誤", f"處理過程中發生錯誤：\n{e}")
-            self._status_bar.showMessage("生成失敗")
+            QMessageBox.critical(self, tr("error"), tr("process_error") + f"\n{e}")
+            self._status_bar.showMessage(tr("failed"))
 
     def _on_generate_cylinder(self) -> None:
         """生成圓柱網格的 blockMeshDict"""
         output_path = self._cylinder_output.path()
 
         if not output_path:
-            QMessageBox.warning(self, "警告", "請設定輸出檔案路徑")
+            QMessageBox.warning(self, tr("warning"), tr("set_output_path"))
             return
 
         # 驗證參數
         valid, msg = self._cylinder_params.validate()
         if not valid:
-            QMessageBox.warning(self, "參數錯誤", msg)
+            QMessageBox.warning(self, tr("param_error"), msg)
             return
 
         try:
-            self._status_bar.showMessage("正在生成圓柱網格...")
+            self._status_bar.showMessage(tr("generating"))
 
             generator = CylinderMeshGenerator(self._cylinder_params)
             generator.generate(output_path)
 
-            self._status_bar.showMessage(f"已生成：{output_path}")
+            self._status_bar.showMessage(tr("generated") + output_path)
             QMessageBox.information(
-                self, "成功", f"已成功生成 blockMeshDict 檔案：\n{output_path}"
+                self, tr("success"), tr("success_msg") + f"\n{output_path}"
             )
 
         except Exception as e:
-            QMessageBox.critical(self, "錯誤", f"處理過程中發生錯誤：\n{e}")
-            self._status_bar.showMessage("生成失敗")
+            QMessageBox.critical(self, tr("error"), tr("process_error") + f"\n{e}")
+            self._status_bar.showMessage(tr("failed"))
