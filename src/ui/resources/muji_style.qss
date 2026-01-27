@@ -12,7 +12,6 @@
 /* === 全域設定 === */
 * {
     font-family: "Noto Sans TC", "Microsoft JhengHei", "Segoe UI", sans-serif;
-    font-size: 13px;
 }
 
 QMainWindow {
@@ -182,10 +181,6 @@ QCheckBox::indicator {
 QCheckBox::indicator:checked {
     background-color: #B8A88A;
     border-color: #A89878;
-}
-
-QCheckBox::indicator:checked::after {
-    content: "";
 }
 
 QCheckBox::indicator:hover {
