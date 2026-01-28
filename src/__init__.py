@@ -3,5 +3,5 @@
 BlockMesh Studio - OpenFOAM blockMesh 工具
 """
 
-__version__ = "0.2.3"
+__version__ = "0.3.0"
 __author__ = "BlockMesh Studio"

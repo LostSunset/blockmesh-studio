@@ -22,7 +22,7 @@ def main():
 
     app = QApplication(sys.argv)
     app.setApplicationName("BlockMesh Studio")
-    app.setApplicationVersion("0.2.3")
+    app.setApplicationVersion("0.3.0")
     app.setOrganizationName("BlockMesh Studio")
 
     # 設定預設字型

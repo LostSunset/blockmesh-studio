@@ -29,10 +29,11 @@ from .widgets.file_selector import FileSelector
 from .widgets.mesh_params_panel import MeshParamsPanel
 from .widgets.boundary_layer_panel import BoundaryLayerPanel
 from .widgets.cylinder_params_panel import CylinderParamsPanel
+from .widgets.data_info_panel import DataInfoPanel
 from .resources import get_stylesheet
 from .i18n import tr, set_language, get_language
 
-from ..core.excel_reader import ExcelReader
+from ..core.data_reader import DataReader
 from ..core.mesh_generator import MeshGenerator
 from ..core.cylinder_mesh import CylinderMeshGenerator
 from ..models.mesh_params import MeshParameters, BoundaryLayerParams, CylinderMeshParams
@@ -47,16 +48,18 @@ class MainWindow(QMainWindow):
         self._mesh_params = MeshParameters()
         self._bl_params = BoundaryLayerParams()
         self._cylinder_params = CylinderMeshParams()
+        self._data_reader = None
 
         self._setup_window()
         self._setup_ui()
         self._apply_style()
+        self._setup_tooltips()
 
     def _setup_window(self) -> None:
         """設定視窗屬性"""
         self.setWindowTitle(tr("app_title"))
-        self.setMinimumSize(780, 850)
-        self.resize(850, 950)
+        self.setMinimumSize(820, 900)
+        self.resize(900, 1000)
 
     def _setup_ui(self) -> None:
         """設定 UI"""
@@ -110,8 +113,8 @@ class MainWindow(QMainWindow):
         self._tabs = QTabWidget()
         main_layout.addWidget(self._tabs, 1)
 
-        # Excel 轉換分頁
-        self._setup_excel_tab()
+        # 流道轉換分頁
+        self._setup_flow_channel_tab()
 
         # 圓柱網格分頁
         self._setup_cylinder_tab()
@@ -121,10 +124,10 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self._status_bar)
         self._status_bar.showMessage(tr("ready"))
 
-    def _setup_excel_tab(self) -> None:
-        """設定 Excel 轉換分頁"""
-        self._excel_tab = QWidget()
-        layout = QVBoxLayout(self._excel_tab)
+    def _setup_flow_channel_tab(self) -> None:
+        """設定流道轉換分頁"""
+        self._flow_tab = QWidget()
+        layout = QVBoxLayout(self._flow_tab)
         layout.setSpacing(16)
 
         # 捲動區域
@@ -141,16 +144,16 @@ class MainWindow(QMainWindow):
         file_layout = QVBoxLayout(self._file_group)
         file_layout.setSpacing(12)
 
-        # Excel 檔案
-        self._excel_label = QLabel(tr("excel_file"))
-        file_layout.addWidget(self._excel_label)
-        self._excel_selector = FileSelector(
+        # 資料檔案
+        self._data_label = QLabel(tr("data_file"))
+        file_layout.addWidget(self._data_label)
+        self._data_selector = FileSelector(
             mode="open",
-            file_filter="Excel Files (*.xlsx *.xls);;All Files (*.*)",
-            placeholder=tr("select_excel"),
+            file_filter=DataReader.get_file_filter(),
+            placeholder=tr("select_data"),
         )
-        self._excel_selector.fileChanged.connect(self._on_excel_changed)
-        file_layout.addWidget(self._excel_selector)
+        self._data_selector.fileChanged.connect(self._on_data_file_changed)
+        file_layout.addWidget(self._data_selector)
 
         # 輸出檔案
         self._output_label = QLabel(tr("output_file"))
@@ -165,6 +168,10 @@ class MainWindow(QMainWindow):
 
         scroll_layout.addWidget(self._file_group)
 
+        # 資料說明面板
+        self._data_info_panel = DataInfoPanel()
+        scroll_layout.addWidget(self._data_info_panel)
+
         # 網格參數
         self._mesh_panel = MeshParamsPanel()
         self._mesh_panel.paramsChanged.connect(self._on_mesh_params_changed)
@@ -176,12 +183,12 @@ class MainWindow(QMainWindow):
         scroll_layout.addWidget(self._bl_panel)
 
         # 說明
-        self._excel_info_group = QGroupBox(tr("info"))
-        info_layout = QVBoxLayout(self._excel_info_group)
-        self._excel_info_text = QLabel(tr("excel_info"))
-        self._excel_info_text.setWordWrap(True)
-        info_layout.addWidget(self._excel_info_text)
-        scroll_layout.addWidget(self._excel_info_group)
+        self._flow_info_group = QGroupBox(tr("info"))
+        info_layout = QVBoxLayout(self._flow_info_group)
+        self._flow_info_text = QLabel(tr("excel_info"))
+        self._flow_info_text.setWordWrap(True)
+        info_layout.addWidget(self._flow_info_text)
+        scroll_layout.addWidget(self._flow_info_group)
 
         scroll_layout.addStretch()
         scroll.setWidget(scroll_content)
@@ -191,18 +198,18 @@ class MainWindow(QMainWindow):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
 
-        self._excel_close_btn = QPushButton(tr("close"))
-        self._excel_close_btn.clicked.connect(self.close)
-        btn_layout.addWidget(self._excel_close_btn)
+        self._flow_close_btn = QPushButton(tr("close"))
+        self._flow_close_btn.clicked.connect(self.close)
+        btn_layout.addWidget(self._flow_close_btn)
 
-        self._excel_generate_btn = QPushButton(tr("generate"))
-        self._excel_generate_btn.setObjectName("primaryButton")
-        self._excel_generate_btn.clicked.connect(self._on_generate_excel)
-        btn_layout.addWidget(self._excel_generate_btn)
+        self._flow_generate_btn = QPushButton(tr("generate"))
+        self._flow_generate_btn.setObjectName("primaryButton")
+        self._flow_generate_btn.clicked.connect(self._on_generate_flow)
+        btn_layout.addWidget(self._flow_generate_btn)
 
         layout.addLayout(btn_layout)
 
-        self._tabs.addTab(self._excel_tab, tr("tab_excel"))
+        self._tabs.addTab(self._flow_tab, tr("tab_excel"))
 
     def _setup_cylinder_tab(self) -> None:
         """設定圓柱網格分頁"""
@@ -268,6 +275,11 @@ class MainWindow(QMainWindow):
 
         self._tabs.addTab(self._cylinder_tab, tr("tab_cylinder"))
 
+    def _setup_tooltips(self) -> None:
+        """設定工具提示"""
+        # 由 mesh_params_panel 和 boundary_layer_panel 內部處理
+        pass
+
     def _apply_style(self) -> None:
         """套用樣式表"""
         stylesheet = get_stylesheet()
@@ -292,16 +304,16 @@ class MainWindow(QMainWindow):
         self._tabs.setTabText(0, tr("tab_excel"))
         self._tabs.setTabText(1, tr("tab_cylinder"))
 
-        # Excel 分頁
+        # 流道分頁
         self._file_group.setTitle(tr("file_settings"))
-        self._excel_label.setText(tr("excel_file"))
+        self._data_label.setText(tr("data_file"))
         self._output_label.setText(tr("output_file"))
-        self._excel_selector.setPlaceholder(tr("select_excel"))
+        self._data_selector.setPlaceholder(tr("select_data"))
         self._output_selector.setPlaceholder(tr("output_path"))
-        self._excel_info_group.setTitle(tr("info"))
-        self._excel_info_text.setText(tr("excel_info"))
-        self._excel_close_btn.setText(tr("close"))
-        self._excel_generate_btn.setText(tr("generate"))
+        self._flow_info_group.setTitle(tr("info"))
+        self._flow_info_text.setText(tr("excel_info"))
+        self._flow_close_btn.setText(tr("close"))
+        self._flow_generate_btn.setText(tr("generate"))
 
         # 圓柱分頁
         self._cyl_file_group.setTitle(tr("output_settings"))
@@ -313,9 +325,10 @@ class MainWindow(QMainWindow):
         self._cyl_generate_btn.setText(tr("generate"))
 
         # 子面板
-        self._excel_selector.retranslateUi()
+        self._data_selector.retranslateUi()
         self._output_selector.retranslateUi()
         self._cylinder_output.retranslateUi()
+        self._data_info_panel.retranslateUi()
         self._mesh_panel.retranslateUi()
         self._bl_panel.retranslateUi()
         self._cylinder_panel.retranslateUi()
@@ -323,14 +336,42 @@ class MainWindow(QMainWindow):
         # 狀態列
         self._status_bar.showMessage(tr("ready"))
 
-    def _on_excel_changed(self, path: str) -> None:
-        """處理 Excel 路徑變更"""
-        if path:
+    def _on_data_file_changed(self, path: str) -> None:
+        """處理資料檔案路徑變更"""
+        if not path:
+            self._data_info_panel.clearStatistics()
+            return
+
+        # 檢查檔案格式
+        if not DataReader.is_supported(path):
+            QMessageBox.warning(self, tr("warning"), tr("unsupported_format"))
+            return
+
+        # 嘗試載入資料
+        try:
+            self._status_bar.showMessage(tr("reading_data"))
+            self._data_reader = DataReader(path)
+            self._data_reader.read()
+
+            # 更新統計資訊
+            self._data_info_panel.setStatistics(self._data_reader.statistics)
+
             # 自動設定輸出路徑
             p = Path(path)
             case_dir = p.parent / p.stem
             system_dir = case_dir / "system"
             self._output_selector.setPath(str(system_dir / "blockMeshDict"))
+
+            self._status_bar.showMessage(
+                tr("data_loaded")
+                + f"{self._data_reader.statistics.total_points} "
+                + tr("total_points").rstrip("：:")
+            )
+
+        except Exception as e:
+            QMessageBox.warning(self, tr("error"), tr("process_error") + f"\n{e}")
+            self._data_info_panel.clearStatistics()
+            self._status_bar.showMessage(tr("ready"))
 
     def _on_mesh_params_changed(self, params: MeshParameters) -> None:
         """處理網格參數變更"""
@@ -344,13 +385,13 @@ class MainWindow(QMainWindow):
         """處理圓柱參數變更"""
         self._cylinder_params = params
 
-    def _on_generate_excel(self) -> None:
-        """生成 Excel 轉換的 blockMeshDict"""
-        excel_path = self._excel_selector.path()
+    def _on_generate_flow(self) -> None:
+        """生成流道轉換的 blockMeshDict"""
+        data_path = self._data_selector.path()
         output_path = self._output_selector.path()
 
-        if not excel_path:
-            QMessageBox.warning(self, tr("warning"), tr("select_excel_file"))
+        if not data_path:
+            QMessageBox.warning(self, tr("warning"), tr("select_data_file"))
             return
 
         if not output_path:
@@ -369,12 +410,14 @@ class MainWindow(QMainWindow):
             return
 
         try:
-            self._status_bar.showMessage(tr("reading_excel"))
+            self._status_bar.showMessage(tr("reading_data"))
 
-            # 讀取 Excel
-            reader = ExcelReader(excel_path)
-            reader.read()
-            inner_samples, outer_samples = reader.sample_layers(
+            # 讀取資料（如果還沒讀取）
+            if self._data_reader is None:
+                self._data_reader = DataReader(data_path)
+                self._data_reader.read()
+
+            inner_samples, outer_samples = self._data_reader.sample_layers(
                 self._mesh_params.num_layers
             )
 
